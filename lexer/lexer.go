@@ -28,6 +28,14 @@ func (l *Lexer) readChar() {
 	l.readPos++
 }
 
+// peekChar returns the next char in the lexer without moving the position
+func (l *Lexer) peekChar() byte {
+	if l.readPos >= len(l.input) {
+		return 0
+	}
+	return l.input[l.readPos]
+}
+
 // NextToken returns the next token, then advances the lexer in preparation
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
@@ -36,13 +44,25 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
-		tok = token.NewToken(token.ASSIGN, string(l.ch))
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.NewToken(token.EQ, string(ch)+string(l.ch))
+		} else {
+			tok = token.NewToken(token.ASSIGN, string(l.ch))
+		}
 	case '+':
 		tok = token.NewToken(token.PLUS, string(l.ch))
 	case '-':
 		tok = token.NewToken(token.MINUS, string(l.ch))
 	case '!':
-		tok = token.NewToken(token.BANG, string(l.ch))
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.NewToken(token.NOT_EQ, string(ch)+string(l.ch))
+		} else {
+			tok = token.NewToken(token.BANG, string(l.ch))
+		}
 	case '*':
 		tok = token.NewToken(token.ASTERISK, string(l.ch))
 	case '/':
