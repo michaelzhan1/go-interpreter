@@ -32,28 +32,73 @@ func (l *Lexer) readChar() {
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
+	l.skipWhitespace()
+
 	switch l.ch {
 	case '=':
-		tok = token.NewToken(token.ASSIGN, l.ch)
+		tok = token.NewToken(token.ASSIGN, string(l.ch))
 	case '+':
-		tok = token.NewToken(token.PLUS, l.ch)
+		tok = token.NewToken(token.PLUS, string(l.ch))
 	case '(':
-		tok = token.NewToken(token.LPAREN, l.ch)
+		tok = token.NewToken(token.LPAREN, string(l.ch))
 	case ')':
-		tok = token.NewToken(token.RPAREN, l.ch)
+		tok = token.NewToken(token.RPAREN, string(l.ch))
 	case '{':
-		tok = token.NewToken(token.LBRACE, l.ch)
+		tok = token.NewToken(token.LBRACE, string(l.ch))
 	case '}':
-		tok = token.NewToken(token.RBRACE, l.ch)
+		tok = token.NewToken(token.RBRACE, string(l.ch))
 	case ',':
-		tok = token.NewToken(token.COMMA, l.ch)
+		tok = token.NewToken(token.COMMA, string(l.ch))
 	case ';':
-		tok = token.NewToken(token.SEMICOLON, l.ch)
+		tok = token.NewToken(token.SEMICOLON, string(l.ch))
 	case 0:
-		tok.Literal = ""
-		tok.Type = token.EOF
+		tok = token.NewToken(token.EOF, "")
+	default:
+		if isLetter(l.ch) {
+			ident := l.readIdentifier()
+			return token.NewToken(token.LookupIdent(ident), ident) // return early without advancing more
+		} else if isDigit(l.ch) {
+			return token.NewToken(token.INT, l.readNumber())
+		} else {
+			tok = token.NewToken(token.ILLEGAL, string(l.ch))
+		}
 	}
 
 	l.readChar() // prepare next char
 	return tok
+}
+
+// skipWhitespace reads past any whitespace in the lexer
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
+// readIdentifier reads the next keyword or identifier such as a variable name
+func (l *Lexer) readIdentifier() string {
+	pos := l.pos
+	for isLetter(l.ch) {
+		l.readChar()
+	}
+	return l.input[pos:l.pos]
+}
+
+// readNumber reads the next number as a string
+func (l *Lexer) readNumber() string {
+	pos := l.pos
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[pos:l.pos]
+}
+
+// isLetter returns if ch is a letter
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+// isDigit returns if ch is a digit
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }

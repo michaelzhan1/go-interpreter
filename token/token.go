@@ -25,6 +25,11 @@ const (
 	LET      = "LET"
 )
 
+var keywords = map[string]TokenType{
+	"fn":  FUNCTION,
+	"let": LET,
+}
+
 type TokenType string
 
 type Token struct {
@@ -32,6 +37,13 @@ type Token struct {
 	Literal string
 }
 
-func NewToken(tokenType TokenType, ch byte) Token {
-	return Token{Type: tokenType, Literal: string(ch)}
+func NewToken(tokenType TokenType, literal string) Token {
+	return Token{Type: tokenType, Literal: literal}
+}
+
+func LookupIdent(ident string) TokenType {
+	if tok, ok := keywords[ident]; ok {
+		return tok
+	}
+	return IDENT
 }
