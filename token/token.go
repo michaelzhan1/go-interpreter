@@ -9,16 +9,24 @@ const (
 	INT   = "INT"   // 1343456
 
 	// Operators
-	ASSIGN = "="
-	PLUS   = "+"
+	ASSIGN   = "="
+	PLUS     = "+"
+	MINUS    = "-"
+	BANG     = "!"
+	ASTERISK = "*"
+	SLASH    = "/"
+
+	// Comparators
+	LT = "<"
+	GT = ">"
 
 	// Delimiters
-	COMMA     = ","
-	SEMICOLON = ";"
 	LPAREN    = "("
 	RPAREN    = ")"
 	LBRACE    = "{"
 	RBRACE    = "}"
+	COMMA     = ","
+	SEMICOLON = ";"
 
 	// Keywords
 	FUNCTION = "FUNCTION"
