@@ -92,7 +92,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	// TODO: take in the actual assigned value later
 
-	if !p.expectPeekAndAdvance(token.SEMICOLON) {
+	if !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
