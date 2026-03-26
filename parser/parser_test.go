@@ -18,9 +18,6 @@ let foobar = 838383;
 	p := New(l)
 
 	program := p.ParseProgram()
-	if program == nil {
-		t.Fatalf("ParseProgram() returned nil")
-	}
 	checkParserErrors(t, p)
 
 	if len(program.Statements) != 3 {
@@ -37,35 +34,50 @@ let foobar = 838383;
 
 	for i, tt := range tests {
 		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
-			return
+		name := tt.expectedIdentifier
+
+		if stmt.TokenLiteral() != "let" {
+			t.Errorf("stmt.TokenLiteral not 'let'. got=%q", stmt.TokenLiteral())
+		}
+
+		letStmt, ok := stmt.(*ast.LetStatement)
+		if !ok {
+			t.Errorf("stmt not *ast.LetStatement. got=%T", stmt)
+		}
+
+		if letStmt.Name.TokenLiteral() != name {
+			t.Errorf("stmt.Name.TokenLiteral() not '%s'. got=%s", name, letStmt.Name.TokenLiteral())
 		}
 	}
 }
 
-func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
-	if s.TokenLiteral() != "let" {
-		t.Errorf("s.TokenLiteral not 'let'. got=%q", s.TokenLiteral())
-		return false
+func TestReturnStatements(t *testing.T) {
+	input := `
+return 5;
+return 10;
+return 123;	
+`
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(program.Statements))
 	}
 
-	letStmt, ok := s.(*ast.LetStatement)
-	if !ok {
-		t.Errorf("s not  *ast.LetStatement. got=%T", s)
-		return false
-	}
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt not *ast.ReturnStatement. got=%T", stmt)
+		}
 
-	if letStmt.Name.Token.Literal != name {
-		t.Errorf("letStmt.Name.Value not '%s'. got=%s", name, letStmt.Name.Token.Literal)
-		return false
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("stmt.TokenLiteral() not 'return', got %q", returnStmt.TokenLiteral())
+		}
 	}
-
-	if letStmt.Name.TokenLiteral() != name {
-		t.Errorf("s.Name not '%s'. got=%s", name, letStmt.Name.TokenLiteral())
-		return false
-	}
-
-	return true
 }
 
 func checkParserErrors(t *testing.T, p *Parser) {
