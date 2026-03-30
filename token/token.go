@@ -61,7 +61,7 @@ func NewToken(tokenType TokenType, literal string) Token {
 	return Token{Type: tokenType, Literal: literal}
 }
 
-func LookupIdent(ident string) TokenType {
+func LookupIdentOrKeyword(ident string) TokenType {
 	if tok, ok := keywords[ident]; ok {
 		return tok
 	}

@@ -1,10 +1,15 @@
 package ast
 
-import "github.com/michaelzhan1/go-interpreter/token"
+import (
+	"bytes"
+
+	"github.com/michaelzhan1/go-interpreter/token"
+)
 
 // Node is the underlying interface for all nodes in an AST
 type Node interface {
 	TokenLiteral() string
+	String() string
 }
 
 // Statement is a Node that does not produce a value
@@ -31,16 +36,31 @@ func (p *Program) TokenLiteral() string {
 		return ""
 	}
 }
+func (p *Program) String() string {
+	var out bytes.Buffer
+
+	for _, s := range p.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}
+
+var _ Node = &Program{}
 
 // Identifier is an expression node that represents a token.IDENT token
 type Identifier struct {
 	Token token.Token // token.IDENT
+	Value string
 }
 
 func (i *Identifier) TokenLiteral() string {
 	return i.Token.Literal
 }
 func (i *Identifier) expressionNode() {}
+func (i *Identifier) String() string  { return i.Value }
+
+var _ Node = &Identifier{}
 
 // LetStatement is a statement node that represents a token.LET token
 type LetStatement struct {
@@ -53,6 +73,23 @@ func (ls *LetStatement) TokenLiteral() string {
 	return ls.Token.Literal
 }
 func (ls *LetStatement) statementNode() {}
+func (ls *LetStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(ls.Token.Literal + " ")   // let
+	out.WriteString(ls.Name.String() + " = ") // variable name
+
+	if ls.Value != nil {
+		out.WriteString(ls.Value.String())
+	} else {
+		out.WriteString("not implemented yet?")
+	}
+	out.WriteString(";")
+
+	return out.String()
+}
+
+var _ Node = &LetStatement{}
 
 // ReturnStatement is a statement node thate represents a token.RETURN token
 type ReturnStatement struct {
@@ -64,3 +101,44 @@ func (rs *ReturnStatement) TokenLiteral() string {
 	return rs.Token.Literal
 }
 func (rs *ReturnStatement) statementNode() {}
+func (rs *ReturnStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(rs.Token.Literal + " ") // return
+
+	if rs.ReturnValue != nil {
+		out.WriteString(rs.ReturnValue.String())
+	} else {
+		out.WriteString("not yet implemented")
+	}
+	out.WriteString(";")
+
+	return out.String()
+}
+
+var _ Node = &ReturnStatement{}
+
+// ExpressionStatement is a statement that wraps around a single expression. Allows for do-nothing statements such as `x + 5;`
+type ExpressionStatement struct {
+	Token      token.Token // first token in the expression, TODO: is this even used? or only used for tokenliteral interface
+	Expression Expression
+}
+
+func (es *ExpressionStatement) TokenLiteral() string {
+	return es.Token.Literal
+}
+func (es *ExpressionStatement) statementNode() {}
+func (es *ExpressionStatement) String() string {
+	var out bytes.Buffer
+
+	if es.Expression != nil {
+		out.WriteString(es.Expression.String())
+	} else {
+		out.WriteString("not implemented yet")
+	}
+
+	out.WriteString(";")
+	return out.String()
+}
+
+var _ Node = &ExpressionStatement{}
