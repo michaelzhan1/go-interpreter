@@ -8,14 +8,36 @@ import (
 	"github.com/michaelzhan1/go-interpreter/token"
 )
 
+// operator precedence, favoring higher values
+const (
+	_ int = iota
+	LOWEST
+	EQUALS
+	LESSGREATER
+	SUM
+	PRODUCT
+	PREFIX
+	CALL
+)
+
+type (
+	// prefixParseFn is a function that parses prefix expressions
+	prefixParseFn func() ast.Expression
+
+	// infixParseFn is a function that parses infix expressions
+	infixParseFn func(ast.Expression) ast.Expression
+)
+
 // Parser is the parser for the monkey language
 type Parser struct {
-	l *lexer.Lexer
+	l      *lexer.Lexer
+	errors []string
 
 	curToken  token.Token
 	peekToken token.Token
 
-	errors []string
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 // New returns a new Parser
@@ -25,11 +47,24 @@ func New(l *lexer.Lexer) *Parser {
 		errors: []string{},
 	}
 
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+
 	// prime curToken and peekToken
 	p.nextToken()
 	p.nextToken()
 
 	return p
+}
+
+// registerPrefix adds a prefixParseFn to the parser under a given token type
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+// registerInfix adds a infixParseFn to the parser under a given token type
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
 }
 
 // Errors returns the errors in the parser
@@ -74,7 +109,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -86,7 +121,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	stmt.Name = &ast.Identifier{Token: p.curToken}
+	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	if !p.expectPeekAndAdvance(token.ASSIGN) {
 		return nil
@@ -113,6 +148,34 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	}
 
 	return stmt
+}
+
+// parseExpressionStatement parses an expression statement (unassigned expression, so it's its own "statement")
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) { // semicolons for expression statements are optional (so just typing "5+5" rather than "5+5;" is ok)
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+// parseExpression parses the expression with the current precedence given the parser's current state and returns an expression
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+	return leftExp
+}
+
+// parseIdentifier parses an identifier into an expression
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
 
 // curTokenIs checks that the parser's curToken is of a given type
