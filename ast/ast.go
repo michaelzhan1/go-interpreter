@@ -62,6 +62,16 @@ func (i *Identifier) String() string  { return i.Value }
 
 var _ Node = &Identifier{}
 
+// IntegerLiteral is an expression node that represents a standalone integer
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+func (il *IntegerLiteral) expressionNode()      {}
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
 // LetStatement is a statement node that represents a token.LET token
 type LetStatement struct {
 	Token token.Token // token.LET
