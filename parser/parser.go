@@ -51,6 +51,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
 	// prime curToken and peekToken
 	p.nextToken()
@@ -74,9 +76,15 @@ func (p *Parser) Errors() []string {
 	return p.errors
 }
 
-// peekError adds an error associate with an unexpected token type while peeking
+// peekError adds an error associated with an unexpected token type while peeking
 func (p *Parser) peekError(t token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken.Type)
+	p.errors = append(p.errors, msg)
+}
+
+// noPrefixParseFnError adds an error associated with parsing an expression without the proper parse function
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
 	p.errors = append(p.errors, msg)
 }
 
@@ -158,17 +166,21 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.SEMICOLON) { // semicolons for expression statements are optional (so just typing "5+5" rather than "5+5;" is ok)
+	// at this point, the expression statement should be fully parsed
+	// semicolons for expression statements are optional (so just typing "5+5" rather than "5+5;" is ok), so check just in case
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
 	return stmt
 }
 
-// parseExpression parses the expression with the current precedence given the parser's current state and returns an expression
+// parseExpression parses the expression with the current precedence given the parser's current state and returns an expression.
+// It acts upon the current state of the parser with the assumed passed-in precedence level
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
+		p.noPrefixParseFnError(p.curToken.Type)
 		return nil
 	}
 	leftExp := prefix()
@@ -193,6 +205,20 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 	lit.Value = value
 	return lit
+}
+
+// parsePrefixExpression parses a prefix expression such as negative or not
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	exp := &ast.PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+
+	p.nextToken()
+
+	exp.Right = p.parseExpression(PREFIX)
+
+	return exp
 }
 
 // curTokenIs checks that the parser's curToken is of a given type

@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/michaelzhan1/go-interpreter/token"
 )
@@ -71,6 +72,23 @@ type IntegerLiteral struct {
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+var _ Node = &IntegerLiteral{}
+
+// PrefixExpression is a prefix expression such as "-5" or "!function(a)"
+type PrefixExpression struct {
+	Token    token.Token // prefix token
+	Operator string
+	Right    Expression
+}
+
+func (pe *PrefixExpression) expressionNode()      {}
+func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
+func (pe *PrefixExpression) String() string {
+	return fmt.Sprintf("(%s%s)", pe.Operator, pe.Right.String())
+}
+
+var _ Node = &PrefixExpression{}
 
 // LetStatement is a statement node that represents a token.LET token
 type LetStatement struct {
