@@ -90,6 +90,22 @@ func (pe *PrefixExpression) String() string {
 
 var _ Node = &PrefixExpression{}
 
+// InfixExpression is an infix expression such as "5+5"
+type InfixExpression struct {
+	Token    token.Token // operator token
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+func (ie *InfixExpression) expressionNode()      {}
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InfixExpression) String() string {
+	return fmt.Sprintf("(%s %s %s)", ie.Left.String(), ie.Operator, ie.Right.String())
+}
+
+var _ Node = &InfixExpression{}
+
 // LetStatement is a statement node that represents a token.LET token
 type LetStatement struct {
 	Token token.Token // token.LET
@@ -109,10 +125,7 @@ func (ls *LetStatement) String() string {
 
 	if ls.Value != nil {
 		out.WriteString(ls.Value.String())
-	} else {
-		out.WriteString("not implemented yet?")
 	}
-	out.WriteString(";")
 
 	return out.String()
 }
@@ -132,14 +145,11 @@ func (rs *ReturnStatement) statementNode() {}
 func (rs *ReturnStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(rs.Token.Literal + " ") // return
+	out.WriteString(rs.Token.Literal) // return
 
 	if rs.ReturnValue != nil {
-		out.WriteString(rs.ReturnValue.String())
-	} else {
-		out.WriteString("not yet implemented")
+		out.WriteString(" " + rs.ReturnValue.String())
 	}
-	out.WriteString(";")
 
 	return out.String()
 }
@@ -161,11 +171,8 @@ func (es *ExpressionStatement) String() string {
 
 	if es.Expression != nil {
 		out.WriteString(es.Expression.String())
-	} else {
-		out.WriteString("not implemented yet")
 	}
 
-	out.WriteString(";")
 	return out.String()
 }
 
