@@ -213,7 +213,9 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 // parseExpression parses the expression with the current precedence given the parser's current state and returns an expression.
-// It acts upon the current state of the parser with the assumed passed-in precedence level
+// It acts upon the current state of the parser.
+// The precedence is the _previous_ token's precedence EXCEPT for prefixes, which effectively combines both a prefix
+// and its operand into one prefix "blob"
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
@@ -222,8 +224,8 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
-	// while precedence is increasing, keep recursing.
-	// then, when precedence is decreasing, infix()
+	// increasing precedence means there's still more work to do (guarantees an operator)
+	// decreasing precedence is covered by infix() and may or may not be another operator
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
