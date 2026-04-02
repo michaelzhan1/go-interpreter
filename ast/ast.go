@@ -126,6 +126,7 @@ func (ls *LetStatement) String() string {
 	if ls.Value != nil {
 		out.WriteString(ls.Value.String())
 	}
+	out.WriteString(";")
 
 	return out.String()
 }
@@ -150,6 +151,7 @@ func (rs *ReturnStatement) String() string {
 	if rs.ReturnValue != nil {
 		out.WriteString(" " + rs.ReturnValue.String())
 	}
+	out.WriteString(";")
 
 	return out.String()
 }
@@ -172,6 +174,8 @@ func (es *ExpressionStatement) String() string {
 	if es.Expression != nil {
 		out.WriteString(es.Expression.String())
 	}
+
+	// does not print semicolon, despite being a statement. Could add it here, though
 
 	return out.String()
 }
