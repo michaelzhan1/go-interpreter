@@ -75,6 +75,18 @@ func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
 var _ Node = &IntegerLiteral{}
 
+// Boolean is an expression node thaet represents a standalone boolean
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+func (b *Boolean) expressionNode()      {}
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+func (b *Boolean) String() string       { return b.Token.Literal }
+
+var _ Node = &Boolean{}
+
 // PrefixExpression is a prefix expression such as "-5" or "!function(a)"
 type PrefixExpression struct {
 	Token    token.Token // prefix token
