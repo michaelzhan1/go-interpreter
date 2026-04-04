@@ -87,6 +87,33 @@ func (b *Boolean) String() string       { return b.Token.Literal }
 
 var _ Node = &Boolean{}
 
+// IfExpression is an expression node that represents an if-else statement. Else is optional
+type IfExpression struct {
+	Token       token.Token // if token
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IfExpression) expressionNode()      {}
+func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IfExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("if ")
+	out.WriteString(ie.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Consequence.String())
+
+	if ie.Alternative != nil {
+		out.WriteString("else ")
+		out.WriteString((ie.Alternative.String()))
+	}
+
+	return out.String()
+}
+
+var _ Node = &IfExpression{}
+
 // PrefixExpression is a prefix expression such as "-5" or "!function(a)"
 type PrefixExpression struct {
 	Token    token.Token // prefix token
@@ -125,10 +152,8 @@ type LetStatement struct {
 	Value Expression
 }
 
-func (ls *LetStatement) TokenLiteral() string {
-	return ls.Token.Literal
-}
-func (ls *LetStatement) statementNode() {}
+func (ls *LetStatement) statementNode()       {}
+func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 
@@ -151,10 +176,8 @@ type ReturnStatement struct {
 	ReturnValue Expression
 }
 
-func (rs *ReturnStatement) TokenLiteral() string {
-	return rs.Token.Literal
-}
-func (rs *ReturnStatement) statementNode() {}
+func (rs *ReturnStatement) statementNode()       {}
+func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
 func (rs *ReturnStatement) String() string {
 	var out bytes.Buffer
 
@@ -176,10 +199,8 @@ type ExpressionStatement struct {
 	Expression Expression
 }
 
-func (es *ExpressionStatement) TokenLiteral() string {
-	return es.Token.Literal
-}
-func (es *ExpressionStatement) statementNode() {}
+func (es *ExpressionStatement) statementNode()       {}
+func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
 func (es *ExpressionStatement) String() string {
 	var out bytes.Buffer
 
@@ -193,3 +214,21 @@ func (es *ExpressionStatement) String() string {
 }
 
 var _ Node = &ExpressionStatement{}
+
+// BlockStatement represents a nested statement in {}, such as in an if-else expression.
+// Essentially, it's a nested program within a part of a program.
+type BlockStatement struct {
+	Token      token.Token // left brace { token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+	for _, stmt := range bs.Statements {
+		out.WriteString(stmt.String())
+	}
+
+	return out.String()
+}

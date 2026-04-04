@@ -124,6 +124,87 @@ func TestBooleanExpression(t *testing.T) {
 	testBooleanLiteral(t, stmt.Expression, true)
 }
 
+func TestIfExpression(t *testing.T) {
+	input := `if (x < y) { x }`
+	program := setupProgram(t, input)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Body does not contain %d statements. got=%d", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statemets[0] is not *ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Excpression is not *ast.IfExpression. got=%T", stmt.Expression)
+	}
+
+	testInfixExpression(t, exp.Condition, "x", "<", "y")
+
+	if len(exp.Consequence.Statements) != 1 {
+		t.Errorf("consequence is not 1 statements. got=%d", len(exp.Consequence.Statements))
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Consequence.Statements[0] is not *ast.ExpressionStatement. got=%T", exp.Consequence.Statements[0])
+	}
+
+	testIdentifier(t, consequence.Expression, "x")
+
+	if exp.Alternative != nil {
+		t.Errorf("exp.Alternative was not nil. got=%+v", exp.Alternative)
+	}
+}
+
+func TestIfElseExpression(t *testing.T) {
+	input := `if (x < y) { x } else { y }`
+	program := setupProgram(t, input)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Body does not contain %d statements. got=%d", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statemets[0] is not *ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Excpression is not *ast.IfExpression. got=%T", stmt.Expression)
+	}
+
+	// test condition
+	testInfixExpression(t, exp.Condition, "x", "<", "y")
+
+	// test consequence
+	if len(exp.Consequence.Statements) != 1 {
+		t.Errorf("consequence is not 1 statement. got=%d", len(exp.Consequence.Statements))
+	}
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("exp.Consequence.Statements[0] is not *ast.ExpressionStatement. got=%T", exp.Consequence.Statements[0])
+	}
+	testIdentifier(t, consequence.Expression, "x")
+
+	// test alternative
+	if exp.Alternative == nil {
+		t.Errorf("exp.Alternative was nil")
+	}
+	if len(exp.Alternative.Statements) != 1 {
+		t.Errorf("alternative is not 1 statement. got=%d", len(exp.Alternative.Statements))
+	}
+	alternative, ok := exp.Alternative.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("exp.Alternative.Statements[0] is not *ast.ExpressionStatement. got=%T", exp.Alternative.Statements[0])
+	}
+	testIdentifier(t, alternative.Expression, "y")
+}
+
 func TestParsingPrefixExpressions(t *testing.T) {
 	prefixTests := []struct {
 		input    string
