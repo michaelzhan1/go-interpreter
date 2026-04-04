@@ -97,9 +97,9 @@ type FunctionLiteral struct {
 func (fl *FunctionLiteral) expressionNode()      {}
 func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
 func (fl *FunctionLiteral) String() string {
-	params := []string{}
-	for _, p := range fl.Parameters {
-		params = append(params, p.String())
+	params := make([]string, len(fl.Parameters))
+	for i, p := range fl.Parameters {
+		params[i] = p.String()
 	}
 
 	var out bytes.Buffer
@@ -112,6 +112,36 @@ func (fl *FunctionLiteral) String() string {
 
 	return out.String()
 }
+
+var _ Node = &FunctionLiteral{}
+
+// CallExpression is an expression node that represents a function call.
+// It can either represent a call from an identifier or from an inlined function.
+type CallExpression struct {
+	Token     token.Token // '(' token since this is technically an infix expression between the Function and the Arguments
+	Function  Expression  // Identifier or FunctionLiteral
+	Arguments []Expression
+}
+
+func (ce *CallExpression) expressionNode()      {}
+func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
+func (ce *CallExpression) String() string {
+	args := make([]string, len(ce.Arguments))
+	for i, a := range ce.Arguments {
+		args[i] = a.String()
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString(ce.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(")")
+
+	return out.String()
+}
+
+var _ Node = &CallExpression{}
 
 // IfExpression is an expression node that represents an if-else statement. Else is optional
 type IfExpression struct {

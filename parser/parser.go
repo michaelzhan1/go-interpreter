@@ -30,6 +30,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 type (
@@ -79,6 +80,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	// prime curToken and peekToken
 	p.nextToken()
@@ -339,6 +341,38 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	}
 
 	return params
+}
+
+// parseCallExpression parses a function call into an ast.CallExpression
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	exp.Arguments = p.parseCallExpressionArguments()
+	return exp
+}
+
+// parseCallExpressionArguments parses a function call's arguments. It expects the current token to be the opening paren of the call.
+func (p *Parser) parseCallExpressionArguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+
+	p.nextToken()
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeekAndAdvance(token.RPAREN) {
+		return nil
+	}
+
+	return args
 }
 
 // parseIfExpression parses an if statement with an optional else
