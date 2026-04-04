@@ -24,12 +24,19 @@ func Eval(node ast.Node) object.Object {
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: v.Value}
 	case *ast.BooleanLiteral:
-		return nativeBoolToBooleanObject(v.Value)
+		if v.Value {
+			return TRUE
+		}
+		return FALSE
+	case *ast.PrefixExpression:
+		right := Eval(v.Right)
+		return evalPrefixExpression(v.Operator, right)
 	}
 
 	return nil
 }
 
+// evalStatements evaluates a slice of statements
 func evalStatements(stmts []ast.Statement) object.Object {
 	var result object.Object
 
@@ -40,9 +47,38 @@ func evalStatements(stmts []ast.Statement) object.Object {
 	return result
 }
 
-func nativeBoolToBooleanObject(input bool) *object.Boolean {
-	if input {
-		return TRUE
+// evalPrefixExpression evaluates a prefix expression
+func evalPrefixExpression(op string, right object.Object) object.Object {
+	switch op {
+	case "!":
+		return evalBangOperatorExpression(right)
+	case "-":
+		return evalMinusOperatorExpression(right)
+	default:
+		return NULL
 	}
-	return FALSE
+}
+
+// evalBangOperatorExpression evaluates the ! prefix operator
+func evalBangOperatorExpression(right object.Object) object.Object {
+	switch right {
+	case TRUE:
+		return FALSE
+	case FALSE:
+		return TRUE
+	case NULL:
+		return TRUE
+	default:
+		return FALSE
+	}
+}
+
+// evalMinusOperatorExpression evaluates the - prefix operator
+func evalMinusOperatorExpression(right object.Object) object.Object {
+	if right.Type() != object.INTEGER_OBJ {
+		return NULL
+	}
+
+	value := right.(*object.Integer).Value
+	return &object.Integer{Value: -value}
 }
