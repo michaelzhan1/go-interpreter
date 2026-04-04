@@ -30,6 +30,7 @@ type Program struct {
 	Statements []Statement
 }
 
+func (p *Program) statementNode() {}
 func (p *Program) TokenLiteral() string {
 	if len(p.Statements) > 0 {
 		return p.Statements[0].TokenLiteral()
@@ -48,6 +49,7 @@ func (p *Program) String() string {
 }
 
 var _ Node = &Program{}
+var _ Statement = &Program{}
 
 // Identifier is an expression node that represents a token.IDENT token
 type Identifier struct {
