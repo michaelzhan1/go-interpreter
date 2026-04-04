@@ -62,6 +62,7 @@ func (i *Identifier) expressionNode() {}
 func (i *Identifier) String() string  { return i.Value }
 
 var _ Node = &Identifier{}
+var _ Expression = &Identifier{}
 
 // IntegerLiteral is an expression node that represents a standalone integer
 type IntegerLiteral struct {
@@ -74,6 +75,7 @@ func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
 var _ Node = &IntegerLiteral{}
+var _ Expression = &IntegerLiteral{}
 
 // BooleanLiteral is an expression node that represents a standalone boolean
 type BooleanLiteral struct {
@@ -86,6 +88,7 @@ func (bl *BooleanLiteral) TokenLiteral() string { return bl.Token.Literal }
 func (bl *BooleanLiteral) String() string       { return bl.Token.Literal }
 
 var _ Node = &BooleanLiteral{}
+var _ Expression = &BooleanLiteral{}
 
 // FunctionLiteral is an expression node that represents a function
 type FunctionLiteral struct {
@@ -114,6 +117,7 @@ func (fl *FunctionLiteral) String() string {
 }
 
 var _ Node = &FunctionLiteral{}
+var _ Expression = &FunctionLiteral{}
 
 // CallExpression is an expression node that represents a function call.
 // It can either represent a call from an identifier or from an inlined function.
@@ -142,6 +146,7 @@ func (ce *CallExpression) String() string {
 }
 
 var _ Node = &CallExpression{}
+var _ Expression = &CallExpression{}
 
 // IfExpression is an expression node that represents an if-else statement. Else is optional
 type IfExpression struct {
@@ -169,6 +174,7 @@ func (ie *IfExpression) String() string {
 }
 
 var _ Node = &IfExpression{}
+var _ Expression = &IfExpression{}
 
 // PrefixExpression is a prefix expression such as "-5" or "!function(a)"
 type PrefixExpression struct {
@@ -191,6 +197,7 @@ func (pe *PrefixExpression) String() string {
 }
 
 var _ Node = &PrefixExpression{}
+var _ Expression = &PrefixExpression{}
 
 // InfixExpression is an infix expression such as "5+5"
 type InfixExpression struct {
@@ -217,6 +224,7 @@ func (ie *InfixExpression) String() string {
 }
 
 var _ Node = &InfixExpression{}
+var _ Expression = &InfixExpression{}
 
 // LetStatement is a statement node that represents a token.LET token
 type LetStatement struct {
@@ -242,6 +250,7 @@ func (ls *LetStatement) String() string {
 }
 
 var _ Node = &LetStatement{}
+var _ Statement = &LetStatement{}
 
 // ReturnStatement is a statement node thate represents a token.RETURN token
 type ReturnStatement struct {
@@ -265,10 +274,11 @@ func (rs *ReturnStatement) String() string {
 }
 
 var _ Node = &ReturnStatement{}
+var _ Statement = &ReturnStatement{}
 
 // ExpressionStatement is a statement that wraps around a single expression. Allows for do-nothing statements such as `x + 5;`
 type ExpressionStatement struct {
-	Token      token.Token // first token in the expression, TODO: is this even used? or only used for tokenliteral interface
+	Token      token.Token // first token in the expression, only really there for node requirement
 	Expression Expression
 }
 
@@ -287,6 +297,7 @@ func (es *ExpressionStatement) String() string {
 }
 
 var _ Node = &ExpressionStatement{}
+var _ Statement = &ExpressionStatement{}
 
 // BlockStatement represents a nested statement in {}, such as in an if-else expression.
 // Essentially, it's a nested program within a part of a program.
@@ -305,3 +316,6 @@ func (bs *BlockStatement) String() string {
 
 	return out.String()
 }
+
+var _ Node = &BlockStatement{}
+var _ Statement = &BlockStatement{}
