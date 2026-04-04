@@ -175,7 +175,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	stmt.Name = &ast.Identifier{Token: p.curToken}
 
 	if !p.expectPeekAndAdvance(token.ASSIGN) {
 		return nil
@@ -268,7 +268,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 
 // parseIdentifier parses an identifier into an ast.Identifier expression
 func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	return &ast.Identifier{Token: p.curToken}
 }
 
 // parseIntegerLiteral parses an integer into an ast.IntegerLiteral expression
@@ -324,7 +324,6 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	p.nextToken()
 	params = append(params, &ast.Identifier{
 		Token: p.curToken,
-		Value: p.curToken.Literal,
 	})
 
 	for p.peekTokenIs(token.COMMA) {
@@ -332,7 +331,6 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 		p.nextToken()
 		params = append(params, &ast.Identifier{
 			Token: p.curToken,
-			Value: p.curToken.Literal,
 		})
 	}
 

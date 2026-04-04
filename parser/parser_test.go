@@ -530,9 +530,6 @@ func testIdentifier(t *testing.T, exp ast.Expression, value string) {
 	if !ok {
 		t.Fatalf("exp not *ast.Identifier. got=%T", exp)
 	}
-	if ident.Value != value {
-		t.Errorf("ident.Value not '%s'. got=%s", value, ident.Value)
-	}
 	if ident.TokenLiteral() != value {
 		t.Errorf("ident.TokenLiteral() not '%s'. got=%s", value, ident.TokenLiteral())
 	}

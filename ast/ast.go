@@ -51,15 +51,14 @@ var _ Node = &Program{}
 
 // Identifier is an expression node that represents a token.IDENT token
 type Identifier struct {
-	Token token.Token // token.IDENT
-	Value string
+	Token token.Token // token.IDENT, with value of Token.Literal
 }
 
 func (i *Identifier) TokenLiteral() string {
 	return i.Token.Literal
 }
 func (i *Identifier) expressionNode() {}
-func (i *Identifier) String() string  { return i.Value }
+func (i *Identifier) String() string  { return i.Token.Literal }
 
 var _ Node = &Identifier{}
 var _ Expression = &Identifier{}
