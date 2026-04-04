@@ -88,7 +88,7 @@ func (l *Lexer) NextToken() token.Token {
 	default:
 		if isLetter(l.ch) {
 			ident := l.readIdentifier()
-			return token.NewToken(token.LookupIdent(ident), ident) // return early without advancing more
+			return token.NewToken(token.LookupIdentOrKeyword(ident), ident) // return early without advancing more
 		} else if isDigit(l.ch) {
 			return token.NewToken(token.INT, l.readNumber())
 		} else {

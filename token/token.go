@@ -52,16 +52,19 @@ var keywords = map[string]TokenType{
 
 type TokenType string
 
+// Token is a single parsed token in the program
 type Token struct {
 	Type    TokenType
 	Literal string
 }
 
+// NewToken returns a new Token
 func NewToken(tokenType TokenType, literal string) Token {
 	return Token{Type: tokenType, Literal: literal}
 }
 
-func LookupIdent(ident string) TokenType {
+// LookupIdentOrKeyword returns a TokenType that is either a reserved keyword or a generic IDENT
+func LookupIdentOrKeyword(ident string) TokenType {
 	if tok, ok := keywords[ident]; ok {
 		return tok
 	}

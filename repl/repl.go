@@ -11,6 +11,7 @@ import (
 
 const PROMPT = ">> "
 
+// Start starts the repl
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
