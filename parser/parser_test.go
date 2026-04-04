@@ -405,15 +405,15 @@ func testIntegerLiteral(t *testing.T, exp ast.Expression, value int64) {
 }
 
 func testBooleanLiteral(t *testing.T, exp ast.Expression, value bool) {
-	b, ok := exp.(*ast.Boolean)
+	bl, ok := exp.(*ast.BooleanLiteral)
 	if !ok {
 		t.Errorf("exp not *ast.Boolean. got=%T", exp)
 	}
-	if b.Value != value {
-		t.Errorf("b.Value not %t. got=%s", value, b.TokenLiteral())
+	if bl.Value != value {
+		t.Errorf("b.Value not %t. got=%s", value, bl.TokenLiteral())
 	}
-	if b.TokenLiteral() != fmt.Sprintf("%t", value) {
-		t.Errorf("b.TokenLiteral not %t. got=%s", value, b.TokenLiteral())
+	if bl.TokenLiteral() != fmt.Sprintf("%t", value) {
+		t.Errorf("b.TokenLiteral not %t. got=%s", value, bl.TokenLiteral())
 	}
 }
 
