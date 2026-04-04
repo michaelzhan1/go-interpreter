@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"strings"
 
 	"github.com/michaelzhan1/go-interpreter/token"
 )
@@ -74,7 +75,7 @@ func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
 var _ Node = &IntegerLiteral{}
 
-// BooleanLiteral is an expression node thaet represents a standalone boolean
+// BooleanLiteral is an expression node that represents a standalone boolean
 type BooleanLiteral struct {
 	Token token.Token
 	Value bool
@@ -85,6 +86,32 @@ func (bl *BooleanLiteral) TokenLiteral() string { return bl.Token.Literal }
 func (bl *BooleanLiteral) String() string       { return bl.Token.Literal }
 
 var _ Node = &BooleanLiteral{}
+
+// FunctionLiteral is an expression node that represents a function
+type FunctionLiteral struct {
+	Token      token.Token // fn token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) expressionNode()      {}
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FunctionLiteral) String() string {
+	params := []string{}
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") ")
+	out.WriteString(fl.Body.String())
+
+	return out.String()
+}
 
 // IfExpression is an expression node that represents an if-else statement. Else is optional
 type IfExpression struct {

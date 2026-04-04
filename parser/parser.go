@@ -68,6 +68,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -282,9 +283,62 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return lit
 }
 
-// parseBooleanLiteral parses a boolean into an ast.Boolean expression
+// parseBooleanLiteral parses a boolean into an ast.BooleanLiteral expression
 func (p *Parser) parseBooleanLiteral() ast.Expression {
 	return &ast.BooleanLiteral{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
+}
+
+// parseFunctionLiteral parses a function into an ast.FunctionLiteral expression
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	fn := &ast.FunctionLiteral{Token: p.curToken}
+
+	if !p.expectPeekAndAdvance(token.LPAREN) {
+		return nil
+	}
+
+	fn.Parameters = p.parseFunctionParameters()
+
+	if !p.expectPeekAndAdvance(token.LBRACE) {
+		return nil
+	}
+
+	fn.Body = p.parseBlockStatement()
+
+	return fn
+}
+
+// parseFunctionParameters parses a function's parameters. It assumes that the curToken is on the opening token.LPAREN.
+// It is conservative in checking cases to better catch syntax errors.
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	params := []*ast.Identifier{}
+
+	// 0 param case
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return params
+	}
+
+	p.nextToken()
+	params = append(params, &ast.Identifier{
+		Token: p.curToken,
+		Value: p.curToken.Literal,
+	})
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		params = append(params, &ast.Identifier{
+			Token: p.curToken,
+			Value: p.curToken.Literal,
+		})
+	}
+
+	// check for closing paren
+	if !p.expectPeekAndAdvance(token.RPAREN) {
+		return nil
+	}
+
+	return params
 }
 
 // parseIfExpression parses an if statement with an optional else
