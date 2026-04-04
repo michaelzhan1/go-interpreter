@@ -297,6 +297,7 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return exp
 }
 
+// parseGroupedExpression parses a nested expression that uses parens
 func (p *Parser) parseGroupedExpression() ast.Expression {
 	p.nextToken()
 
