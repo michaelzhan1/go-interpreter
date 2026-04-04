@@ -16,29 +16,23 @@ func setupProgram(t *testing.T, input string) *ast.Program {
 	return program
 }
 
-func TestLetStatements(t *testing.T) {
-	input := `
-let x = 5;
-let y = 10;
-let foobar = 838383;
-`
-	program := setupProgram(t, input)
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(program.Statements))
-	}
-
+func TestLetStatement(t *testing.T) {
 	tests := []struct {
+		input              string
 		expectedIdentifier string
+		expectedValue      any
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foobar = y;", "foobar", "y"},
 	}
+	for _, tt := range tests {
+		program := setupProgram(t, tt.input)
 
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		name := tt.expectedIdentifier
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statements. got=%d", len(program.Statements))
+		}
+		stmt := program.Statements[0]
 
 		if stmt.TokenLiteral() != "let" {
 			t.Errorf("stmt.TokenLiteral not 'let'. got=%q", stmt.TokenLiteral())
@@ -49,33 +43,43 @@ let foobar = 838383;
 			t.Errorf("stmt not *ast.LetStatement. got=%T", stmt)
 		}
 
-		if letStmt.Name.TokenLiteral() != name {
-			t.Errorf("stmt.Name.TokenLiteral() not '%s'. got=%s", name, letStmt.Name.TokenLiteral())
+		if letStmt.Name.TokenLiteral() != tt.expectedIdentifier {
+			t.Errorf("stmt.Name.TokenLiteral() not '%s. got=%s", tt.expectedIdentifier, letStmt.Name.TokenLiteral())
 		}
+
+		val := stmt.(*ast.LetStatement).Value
+		testLiteralExpression(t, val, tt.expectedValue)
 	}
 }
 
-func TestReturnStatements(t *testing.T) {
-	input := `
-return 5;
-return 10;
-return 123;	
-`
-	program := setupProgram(t, input)
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(program.Statements))
+func TestReturnStatement(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedValue any
+	}{
+		{"return 5;", 5},
+		{"return true;", true},
+		{"return foobar;", "foobar"},
 	}
 
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.ReturnStatement)
-		if !ok {
-			t.Errorf("stmt not *ast.ReturnStatement. got=%T", stmt)
+	for _, tt := range tests {
+		program := setupProgram(t, tt.input)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statements. got=%d",
+				len(program.Statements))
 		}
 
-		if returnStmt.TokenLiteral() != "return" {
-			t.Errorf("stmt.TokenLiteral() not 'return'. got=%q", returnStmt.TokenLiteral())
+		stmt := program.Statements[0]
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Fatalf("stmt not *ast.returnStatement. got=%T", stmt)
 		}
+		if returnStmt.TokenLiteral() != "return" {
+			t.Fatalf("returnStmt.TokenLiteral not 'return', got %q",
+				returnStmt.TokenLiteral())
+		}
+		testLiteralExpression(t, returnStmt.ReturnValue, tt.expectedValue)
 	}
 }
 
