@@ -16,11 +16,14 @@ func Eval(node ast.Node) object.Object {
 	switch v := node.(type) {
 	// Statements
 	case *ast.Program:
-		return evalStatements(v.Statements)
+		return evalProgram(v)
+	case *ast.ReturnStatement:
+		val := Eval(v.ReturnValue)
+		return &object.ReturnValue{Value: val}
 	case *ast.ExpressionStatement:
 		return Eval(v.Expression)
 	case *ast.BlockStatement:
-		return evalStatements(v.Statements)
+		return evalBlockStatement(v)
 
 	// Expressions
 	case *ast.IntegerLiteral:
@@ -41,12 +44,46 @@ func Eval(node ast.Node) object.Object {
 	return nil
 }
 
-// evalStatements evaluates a slice of statements
-func evalStatements(stmts []ast.Statement) object.Object {
+// evalProgram evaluates a program
+func evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 
-	for _, stmt := range stmts {
-		result = Eval(stmt) // TODO: Flesh this out
+	for _, stmt := range program.Statements {
+		result = Eval(stmt)
+
+		if returnValue, ok := result.(*object.ReturnValue); ok {
+			return returnValue.Value
+		}
+	}
+
+	return result
+}
+
+// // evalStatements evaluates a slice of statements
+// func evalStatements(stmts []ast.Statement) object.Object {
+// 	var result object.Object
+
+// 	for _, stmt := range stmts {
+// 		result = Eval(stmt)
+
+// 		if returnValue, ok := result.(*object.ReturnValue); ok {
+// 			return returnValue.Value
+// 		}
+// 	}
+
+// 	return result
+// }
+
+// evalBlockStatement evaluates a block statement
+func evalBlockStatement(block *ast.BlockStatement) object.Object {
+	var result object.Object
+
+	for _, stmt := range block.Statements {
+		result = Eval(stmt)
+
+		if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
+			return result
+		}
 	}
 
 	return result
