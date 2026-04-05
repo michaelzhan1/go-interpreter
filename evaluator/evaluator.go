@@ -163,6 +163,10 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		return newError("not a function: %s", fn.Type())
 	}
 
+	if len(args) != len(function.Parameters) {
+		return newError("wrong number of arguments. want=%d, got=%d", len(function.Parameters), len(args))
+	}
+
 	extendedEnv := extendFunctionEnv(function, args)
 	evaluated := Eval(function.Body, extendedEnv)
 	return unwrapReturnValue(evaluated)
@@ -182,7 +186,7 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	if returnValue, ok := obj.(*object.ReturnValue); ok {
 		return returnValue.Value // stops a return value from returning all function call stack early
 	}
-	return obj
+	return obj // if no explicit value is returned, take the last value
 }
 
 // evalPrefixExpression evaluates a prefix expression
