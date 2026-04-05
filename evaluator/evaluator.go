@@ -43,6 +43,22 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: v.Value}
 	case *ast.BooleanLiteral:
 		return nativeBoolToBooleanObject(v.Value)
+	case *ast.FunctionLiteral:
+		return &object.Function{
+			Parameters: v.Parameters,
+			Body:       v.Body,
+			Env:        env,
+		}
+	case *ast.CallExpression:
+		function := Eval(v.Function, env)
+		if isError(function) {
+			return function
+		}
+		args := evalExpressions(v.Arguments, env)
+		if len(args) == 1 && isError(args[0]) {
+			return args[0]
+		}
+		return applyFunction(function, args)
 	case *ast.IfExpression:
 		return evalIfExpression(v, env)
 	case *ast.PrefixExpression:
@@ -102,6 +118,20 @@ func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) obje
 	return result
 }
 
+// evalExpressions evaluates a slice of ast.Expression
+func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
+	var result []object.Object
+
+	for _, e := range exps {
+		evaluated := Eval(e, env)
+		if isError(evaluated) {
+			return []object.Object{evaluated}
+		}
+		result = append(result, evaluated)
+	}
+	return result
+}
+
 // evalIdentifier evaluates an identifier
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
 	val, ok := env.Get(node.TokenLiteral())
@@ -124,6 +154,35 @@ func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Ob
 	} else {
 		return NULL
 	}
+}
+
+// applyFunction applies a function with args
+func applyFunction(fn object.Object, args []object.Object) object.Object {
+	function, ok := fn.(*object.Function)
+	if !ok {
+		return newError("not a function: %s", fn.Type())
+	}
+
+	extendedEnv := extendFunctionEnv(function, args)
+	evaluated := Eval(function.Body, extendedEnv)
+	return unwrapReturnValue(evaluated)
+}
+
+// extendFunctionEnv takes a function's env and creates an inner env with the outer's scope
+func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
+	env := object.NewEnclosedEnvironment(fn.Env)
+	for i, param := range fn.Parameters {
+		env.Set(param.TokenLiteral(), args[i]) // set each param to its evaluated arg value
+	}
+	return env
+}
+
+// unwrapReturnValue bubbles up the return value from the function
+func unwrapReturnValue(obj object.Object) object.Object {
+	if returnValue, ok := obj.(*object.ReturnValue); ok {
+		return returnValue.Value // stops a return value from returning all function call stack early
+	}
+	return obj
 }
 
 // evalPrefixExpression evaluates a prefix expression
