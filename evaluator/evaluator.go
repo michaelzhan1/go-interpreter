@@ -24,13 +24,14 @@ func Eval(node ast.Node) object.Object {
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: v.Value}
 	case *ast.BooleanLiteral:
-		if v.Value {
-			return TRUE
-		}
-		return FALSE
+		return nativeBoolToBooleanObject(v.Value)
 	case *ast.PrefixExpression:
 		right := Eval(v.Right)
 		return evalPrefixExpression(v.Operator, right)
+	case *ast.InfixExpression:
+		left := Eval(v.Left)
+		right := Eval(v.Right)
+		return evalInfixExpression(v.Operator, left, right)
 	}
 
 	return nil
@@ -81,4 +82,55 @@ func evalMinusOperatorExpression(right object.Object) object.Object {
 
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
+}
+
+// evalInfixExpression evaluates a generic infix expression
+func evalInfixExpression(op string, left object.Object, right object.Object) object.Object {
+	switch {
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
+		return evalIntegerInfixExpression(op, left, right)
+
+	// catch-alls for other types. directly comparing left and right will be correct for bools since we use singleton objects
+	case op == "==":
+		return nativeBoolToBooleanObject(left == right)
+	case op == "!=":
+		return nativeBoolToBooleanObject(left != right)
+	default:
+		return NULL
+	}
+}
+
+// evalIntegerInfixExpression evaluates an infix expression between two integers
+func evalIntegerInfixExpression(op string, left object.Object, right object.Object) object.Object {
+	leftVal := left.(*object.Integer).Value
+	rightVal := right.(*object.Integer).Value
+
+	switch op {
+	case "+":
+		return &object.Integer{Value: leftVal + rightVal}
+	case "-":
+		return &object.Integer{Value: leftVal - rightVal}
+	case "*":
+		return &object.Integer{Value: leftVal * rightVal}
+	case "/":
+		return &object.Integer{Value: leftVal / rightVal}
+	case ">":
+		return nativeBoolToBooleanObject(leftVal > rightVal)
+	case "<":
+		return nativeBoolToBooleanObject(leftVal < rightVal)
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)
+	default:
+		return NULL
+	}
+}
+
+// nativeBoolToBooleanObject converts a go bool into a singleton boolean object
+func nativeBoolToBooleanObject(input bool) *object.Boolean {
+	if input {
+		return TRUE
+	}
+	return FALSE
 }
