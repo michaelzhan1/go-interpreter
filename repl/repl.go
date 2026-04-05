@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/michaelzhan1/go-interpreter/evaluator"
 	"github.com/michaelzhan1/go-interpreter/lexer"
+	"github.com/michaelzhan1/go-interpreter/object"
 	"github.com/michaelzhan1/go-interpreter/parser"
 )
 
@@ -14,6 +16,7 @@ const PROMPT = ">> "
 // Start starts the repl
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Printf(PROMPT)
@@ -32,8 +35,11 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+		evaluated := evaluator.Eval(program, env)
+		if evaluated != nil {
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
