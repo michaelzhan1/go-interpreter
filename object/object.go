@@ -12,6 +12,7 @@ const (
 	INTEGER_OBJ      = "INTEGER"
 	BOOLEAN_OBJ      = "BOOLEAN"
 	STRING_OBJ       = "STRING"
+	ARRAY_OBJ        = "ARRAY"
 	FUNCTION_OBJ     = "FUNCTION"
 	BUILTIN_OBJ      = "BUILTIN"
 	NULL_OBJ         = "NULL"
@@ -57,6 +58,27 @@ func (s *String) Type() ObjectType { return STRING_OBJ }
 func (s *String) Inspect() string  { return s.Value }
 
 var _ Object = &String{}
+
+// Array is an Object representing an array
+type Array struct {
+	Elements []Object
+}
+
+func (a *Array) Type() ObjectType { return ARRAY_OBJ }
+func (a *Array) Inspect() string {
+	es := []string{}
+	for _, e := range a.Elements {
+		es = append(es, e.Inspect())
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString(("["))
+	out.WriteString(strings.Join(es, ", "))
+	out.WriteString("]")
+
+	return out.String()
+}
 
 // Function is an Object representing a function
 type Function struct {

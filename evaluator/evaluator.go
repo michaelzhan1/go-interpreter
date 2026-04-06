@@ -45,6 +45,22 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nativeBoolToBooleanObject(v.Value)
 	case *ast.StringLiteral:
 		return &object.String{Value: v.Value}
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(v.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
+	case *ast.IndexExpression:
+		arr := Eval(v.Arr, env)
+		if isError(arr) {
+			return arr
+		}
+		index := Eval(v.Index, env)
+		if isError(index) {
+			return index
+		}
+		return evalIndexExpression(arr, index)
 	case *ast.FunctionLiteral:
 		return &object.Function{
 			Parameters: v.Parameters,
@@ -147,19 +163,27 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 	return newError("identifier not found: %s", node.TokenLiteral())
 }
 
-// evalIfExpression evaluates an if expression node
-func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Object {
-	condition := Eval(node.Condition, env)
-	if isError(condition) {
-		return condition
+// evalIndexExpression evaluates an indexing expression
+func evalIndexExpression(arr, index object.Object) object.Object {
+	switch {
+	case arr.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(arr, index)
+	default:
+		return newError("index operator not supported: %s", arr.Type())
 	}
-	if isTruthy(condition) {
-		return Eval(node.Consequence, env)
-	} else if node.Alternative != nil {
-		return Eval(node.Alternative, env)
-	} else {
+}
+
+// evalArrayIndexExpression evaluates an indexing expression on an array
+func evalArrayIndexExpression(arr, index object.Object) object.Object {
+	array := arr.(*object.Array)
+	idx := index.(*object.Integer).Value
+	max := int64(len(array.Elements) - 1)
+
+	if idx < 0 || idx > max {
 		return NULL
 	}
+
+	return array.Elements[idx]
 }
 
 // applyFunction applies a function with args
@@ -194,6 +218,21 @@ func unwrapReturnValue(obj object.Object) object.Object {
 		return returnValue.Value // stops a return value from returning all function call stack early
 	}
 	return obj // if no explicit value is returned, take the last value
+}
+
+// evalIfExpression evaluates an if expression node
+func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Object {
+	condition := Eval(node.Condition, env)
+	if isError(condition) {
+		return condition
+	}
+	if isTruthy(condition) {
+		return Eval(node.Consequence, env)
+	} else if node.Alternative != nil {
+		return Eval(node.Alternative, env)
+	} else {
+		return NULL
+	}
 }
 
 // evalPrefixExpression evaluates a prefix expression

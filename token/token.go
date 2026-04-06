@@ -24,6 +24,8 @@ const (
 	NOT_EQ = "!="
 
 	// Delimiters
+	LBRACKET  = "["
+	RBRACKET  = "]"
 	LPAREN    = "("
 	RPAREN    = ")"
 	LBRACE    = "{"
