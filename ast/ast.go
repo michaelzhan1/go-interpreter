@@ -91,6 +91,19 @@ func (bl *BooleanLiteral) String() string       { return bl.Token.Literal }
 var _ Node = &BooleanLiteral{}
 var _ Expression = &BooleanLiteral{}
 
+// StringLiteral is an expression node that represents a string literal
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return sl.Token.Literal }
+
+var _ Node = &StringLiteral{}
+var _ Expression = &StringLiteral{}
+
 // FunctionLiteral is an expression node that represents a function
 type FunctionLiteral struct {
 	Token      token.Token // fn token

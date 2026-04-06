@@ -111,7 +111,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	testIntegerLiteral(t, stmt.Expression, 5)
 }
 
-func TestBooleanExpression(t *testing.T) {
+func TestBooleanLiteralExpression(t *testing.T) {
 	input := "true;"
 	program := setupProgram(t, input)
 
@@ -124,6 +124,20 @@ func TestBooleanExpression(t *testing.T) {
 	}
 
 	testBooleanLiteral(t, stmt.Expression, true)
+}
+
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello world";`
+	program := setupProgram(t, input)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has not enough statements. got=%d", len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+	testStringLiteral(t, stmt.Expression, "hello world")
 }
 
 func TestFunctionLiteral(t *testing.T) {
@@ -540,10 +554,10 @@ func testIntegerLiteral(t *testing.T, exp ast.Expression, value int64) {
 		return
 	}
 	if il.Value != value {
-		t.Errorf("integ.Value not %d. got=%d", value, il.Value)
+		t.Errorf("il.Value not %d. got=%d", value, il.Value)
 	}
 	if il.TokenLiteral() != fmt.Sprintf("%d", value) {
-		t.Errorf("integ.TokenLiteral not %d. got=%s", value, il.TokenLiteral())
+		t.Errorf("il.TokenLiteral() not %d. got=%s", value, il.TokenLiteral())
 	}
 }
 
@@ -557,7 +571,17 @@ func testBooleanLiteral(t *testing.T, exp ast.Expression, value bool) {
 		t.Errorf("b.Value not %t. got=%s", value, bl.TokenLiteral())
 	}
 	if bl.TokenLiteral() != fmt.Sprintf("%t", value) {
-		t.Errorf("b.TokenLiteral not %t. got=%s", value, bl.TokenLiteral())
+		t.Errorf("b.TokenLiteral() not %t. got=%s", value, bl.TokenLiteral())
+	}
+}
+
+func testStringLiteral(t *testing.T, exp ast.Expression, value string) {
+	sl, ok := exp.(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("exp not *ast.StringLiteral. got=%T", exp)
+	}
+	if sl.TokenLiteral() != value {
+		t.Errorf("sl.TokenLiteral() not %q. got=%q", value, sl.TokenLiteral())
 	}
 }
 
@@ -568,7 +592,12 @@ func testLiteralExpression(t *testing.T, exp ast.Expression, value any) {
 	case int64:
 		testIntegerLiteral(t, exp, v)
 	case string:
-		testIdentifier(t, exp, v)
+		switch exp.(type) {
+		case *ast.StringLiteral:
+			testStringLiteral(t, exp, v)
+		case *ast.Identifier:
+			testIdentifier(t, exp, v)
+		}
 	case bool:
 		testBooleanLiteral(t, exp, v)
 	default:

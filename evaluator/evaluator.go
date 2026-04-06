@@ -43,6 +43,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: v.Value}
 	case *ast.BooleanLiteral:
 		return nativeBoolToBooleanObject(v.Value)
+	case *ast.StringLiteral:
+		return &object.String{Value: v.Value}
 	case *ast.FunctionLiteral:
 		return &object.Function{
 			Parameters: v.Parameters,
@@ -230,6 +232,8 @@ func evalInfixExpression(op string, left object.Object, right object.Object) obj
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(op, left, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExpression(op, left, right)
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
 
@@ -268,6 +272,23 @@ func evalIntegerInfixExpression(op string, left object.Object, right object.Obje
 	default:
 		return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 	}
+}
+
+func evalStringInfixExpression(op string, left object.Object, right object.Object) object.Object {
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+
+	switch op {
+	case "+":
+		return &object.String{Value: leftVal + rightVal}
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)
+	default:
+		return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
+	}
+
 }
 
 // nativeBoolToBooleanObject converts a go bool into a singleton boolean object

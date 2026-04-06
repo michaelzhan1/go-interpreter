@@ -26,6 +26,8 @@ return false;
 
 10 == 10;
 10 != 9;
+"foobar";
+"foo bar";
 `
 
 	tests := []struct {
@@ -105,6 +107,10 @@ return false;
 		{token.NOT_EQ, "!="},
 		{token.INT, "9"},
 		{token.SEMICOLON, ";"},
+		{token.STRING, "foobar"},
+		{token.SEMICOLON, ";"},
+		{token.STRING, "foo bar"},
+		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
 
@@ -114,11 +120,12 @@ return false;
 		tok := l.NextToken()
 
 		if tok.Type != tt.expectedType {
-			t.Fatalf("test[%d] - wrong tokentype, expected=%q, got=%q", i, tt.expectedType, tok.Type)
+			t.Errorf("test[%d] - wrong tokentype, expected=%q, got=%q", i, tt.expectedType, tok.Type)
+			continue
 		}
 
 		if tok.Literal != tt.expectedLiteral {
-			t.Fatalf("test[%d] - wrong literal, expected=%q, got=%q", i, tt.expectedLiteral, tok.Literal)
+			t.Errorf("test[%d] - wrong literal, expected=%q, got=%q", i, tt.expectedLiteral, tok.Literal)
 		}
 	}
 }
