@@ -1,8 +1,22 @@
 package evaluator
 
-import "github.com/michaelzhan1/go-interpreter/object"
+import (
+	"fmt"
+
+	"github.com/michaelzhan1/go-interpreter/object"
+)
 
 var builtins = map[string]*object.BuiltIn{
+	"print": {
+		Fn: func(args ...object.Object) object.Object {
+			ss := make([]any, len(args))
+			for i, a := range args {
+				ss[i] = any(a.Inspect())
+			}
+			fmt.Println(ss...)
+			return NULL
+		},
+	},
 	"len": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
