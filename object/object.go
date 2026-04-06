@@ -13,6 +13,7 @@ const (
 	BOOLEAN_OBJ      = "BOOLEAN"
 	STRING_OBJ       = "STRING"
 	FUNCTION_OBJ     = "FUNCTION"
+	BUILTIN_OBJ      = "BUILTIN"
 	NULL_OBJ         = "NULL"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERROR_OBJ        = "ERROR"
@@ -81,6 +82,17 @@ func (f *Function) Inspect() string {
 
 	return out.String()
 }
+
+// BuiltInFunction is a built in function that operates on objects
+type BuiltInFunction func(args ...Object) Object
+
+// BuiltIn is an Object representing a built in function
+type BuiltIn struct {
+	Fn BuiltInFunction
+}
+
+func (bi *BuiltIn) Type() ObjectType { return BUILTIN_OBJ }
+func (bi *BuiltIn) Inspect() string  { return "built-in function" }
 
 // Null is an Object representing null
 type Null struct{}

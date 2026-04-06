@@ -136,11 +136,15 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 
 // evalIdentifier evaluates an identifier
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(node.TokenLiteral())
-	if !ok {
-		return newError("identifier not found: %s", node.TokenLiteral())
+	if val, ok := env.Get(node.TokenLiteral()); ok {
+		return val
 	}
-	return val
+
+	if builtin, ok := builtins[node.TokenLiteral()]; ok {
+		return builtin
+	}
+
+	return newError("identifier not found: %s", node.TokenLiteral())
 }
 
 // evalIfExpression evaluates an if expression node
@@ -160,18 +164,19 @@ func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Ob
 
 // applyFunction applies a function with args
 func applyFunction(fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(*object.Function)
-	if !ok {
+	switch v := fn.(type) {
+	case *object.Function:
+		if len(args) != len(v.Parameters) {
+			return newError("wrong number of arguments. want=%d, got=%d", len(v.Parameters), len(args))
+		}
+		extendedEnv := extendFunctionEnv(v, args)
+		evaluated := Eval(v.Body, extendedEnv)
+		return unwrapReturnValue(evaluated)
+	case *object.BuiltIn:
+		return v.Fn(args...)
+	default:
 		return newError("not a function: %s", fn.Type())
 	}
-
-	if len(args) != len(function.Parameters) {
-		return newError("wrong number of arguments. want=%d, got=%d", len(function.Parameters), len(args))
-	}
-
-	extendedEnv := extendFunctionEnv(function, args)
-	evaluated := Eval(function.Body, extendedEnv)
-	return unwrapReturnValue(evaluated)
 }
 
 // extendFunctionEnv takes a function's env and creates an inner env with the outer's scope
