@@ -31,6 +31,7 @@ const (
 	LBRACE    = "{"
 	RBRACE    = "}"
 	COMMA     = ","
+	COLON     = ":"
 	SEMICOLON = ";"
 
 	// Keywords

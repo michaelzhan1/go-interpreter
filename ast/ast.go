@@ -126,6 +126,35 @@ func (al *ArrayLiteral) String() string {
 	return out.String()
 }
 
+var _ Node = &ArrayLiteral{}
+var _ Expression = &ArrayLiteral{}
+
+// HashLiteral is an expression node that represents a hash map
+type HashLiteral struct {
+	Token token.Token // '{' token
+	Pairs map[Expression]Expression
+}
+
+func (hl *HashLiteral) expressionNode()      {}
+func (hl *HashLiteral) TokenLiteral() string { return hl.Token.Literal }
+func (hl *HashLiteral) String() string {
+	pairs := []string{}
+	for k, v := range hl.Pairs {
+		pairs = append(pairs, k.String()+":"+v.String())
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("{")
+
+	return out.String()
+}
+
+var _ Node = &HashLiteral{}
+var _ Expression = &HashLiteral{}
+
 // IndexExpression is an expression node that represents an array index call.
 // It can either represent an index of an identifier or of an inlined array.
 type IndexExpression struct {
@@ -147,6 +176,9 @@ func (ie *IndexExpression) String() string {
 
 	return out.String()
 }
+
+var _ Node = &IndexExpression{}
+var _ Expression = &IndexExpression{}
 
 // FunctionLiteral is an expression node that represents a function
 type FunctionLiteral struct {
