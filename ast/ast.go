@@ -91,6 +91,95 @@ func (bl *BooleanLiteral) String() string       { return bl.Token.Literal }
 var _ Node = &BooleanLiteral{}
 var _ Expression = &BooleanLiteral{}
 
+// StringLiteral is an expression node that represents a string literal
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return sl.Token.Literal }
+
+var _ Node = &StringLiteral{}
+var _ Expression = &StringLiteral{}
+
+type ArrayLiteral struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+func (al *ArrayLiteral) expressionNode()      {}
+func (al *ArrayLiteral) TokenLiteral() string { return al.Token.Literal }
+func (al *ArrayLiteral) String() string {
+	elements := []string{}
+	for _, e := range al.Elements {
+		elements = append(elements, e.String())
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+
+	return out.String()
+}
+
+var _ Node = &ArrayLiteral{}
+var _ Expression = &ArrayLiteral{}
+
+// HashLiteral is an expression node that represents a hash map
+type HashLiteral struct {
+	Token token.Token // '{' token
+	Pairs map[Expression]Expression
+}
+
+func (hl *HashLiteral) expressionNode()      {}
+func (hl *HashLiteral) TokenLiteral() string { return hl.Token.Literal }
+func (hl *HashLiteral) String() string {
+	pairs := []string{}
+	for k, v := range hl.Pairs {
+		pairs = append(pairs, k.String()+":"+v.String())
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("{")
+
+	return out.String()
+}
+
+var _ Node = &HashLiteral{}
+var _ Expression = &HashLiteral{}
+
+// IndexExpression is an expression node that represents an array index call.
+// It can either represent an index of an identifier or of an inlined array.
+type IndexExpression struct {
+	Token token.Token // '[' token
+	Arr   Expression
+	Index Expression
+}
+
+func (ie *IndexExpression) expressionNode()      {}
+func (ie *IndexExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IndexExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ie.Arr.String())
+	out.WriteString("[")
+	out.WriteString(ie.Index.String())
+	out.WriteString("])")
+
+	return out.String()
+}
+
+var _ Node = &IndexExpression{}
+var _ Expression = &IndexExpression{}
+
 // FunctionLiteral is an expression node that represents a function
 type FunctionLiteral struct {
 	Token      token.Token // fn token

@@ -43,6 +43,26 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: v.Value}
 	case *ast.BooleanLiteral:
 		return nativeBoolToBooleanObject(v.Value)
+	case *ast.StringLiteral:
+		return &object.String{Value: v.Value}
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(v.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
+	case *ast.HashLiteral:
+		return evalHashLiteral(v, env)
+	case *ast.IndexExpression:
+		arr := Eval(v.Arr, env)
+		if isError(arr) {
+			return arr
+		}
+		index := Eval(v.Index, env)
+		if isError(index) {
+			return index
+		}
+		return evalIndexExpression(arr, index)
 	case *ast.FunctionLiteral:
 		return &object.Function{
 			Parameters: v.Parameters,
@@ -134,42 +154,101 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 
 // evalIdentifier evaluates an identifier
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(node.TokenLiteral())
-	if !ok {
-		return newError("identifier not found: %s", node.TokenLiteral())
+	if val, ok := env.Get(node.TokenLiteral()); ok {
+		return val
 	}
-	return val
+
+	if builtin, ok := builtins[node.TokenLiteral()]; ok {
+		return builtin
+	}
+
+	return newError("identifier not found: %s", node.TokenLiteral())
 }
 
-// evalIfExpression evaluates an if expression node
-func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Object {
-	condition := Eval(node.Condition, env)
-	if isError(condition) {
-		return condition
+// evalHashLiteral evaluates a hash literal
+func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for keyNode, valNode := range node.Pairs {
+		key := Eval(keyNode, env)
+		if isError(key) {
+			return key
+		}
+
+		hashKey, ok := key.(object.Hashable)
+		if !ok {
+			return newError("unusable as hash key: %s", key.Type())
+		}
+
+		val := Eval(valNode, env)
+		if isError(val) {
+			return val
+		}
+
+		hashed := hashKey.HashKey()
+		pairs[hashed] = object.HashPair{Key: key, Value: val}
 	}
-	if isTruthy(condition) {
-		return Eval(node.Consequence, env)
-	} else if node.Alternative != nil {
-		return Eval(node.Alternative, env)
-	} else {
+
+	return &object.Hash{Pairs: pairs}
+}
+
+// evalIndexExpression evaluates an indexing expression
+func evalIndexExpression(left, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, index)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExpression(left, index)
+	default:
+		return newError("index operator not supported: %s", left.Type())
+	}
+}
+
+// evalArrayIndexExpression evaluates an indexing expression on an array
+func evalArrayIndexExpression(arr, index object.Object) object.Object {
+	array := arr.(*object.Array)
+	idx := index.(*object.Integer).Value
+	max := int64(len(array.Elements) - 1)
+
+	if idx < 0 || idx > max {
 		return NULL
 	}
+
+	return array.Elements[idx]
+}
+
+// evalHashIndexExpression evaluates an indexing expression on a hash map
+func evalHashIndexExpression(obj, index object.Object) object.Object {
+	hash := obj.(*object.Hash)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return newError("unusable as hash key: %s", index.Type())
+	}
+
+	pair, ok := hash.Pairs[key.HashKey()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
 }
 
 // applyFunction applies a function with args
 func applyFunction(fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(*object.Function)
-	if !ok {
+	switch v := fn.(type) {
+	case *object.Function:
+		if len(args) != len(v.Parameters) {
+			return newError("wrong number of arguments. want=%d, got=%d", len(v.Parameters), len(args))
+		}
+		extendedEnv := extendFunctionEnv(v, args)
+		evaluated := Eval(v.Body, extendedEnv)
+		return unwrapReturnValue(evaluated)
+	case *object.BuiltIn:
+		return v.Fn(args...)
+	default:
 		return newError("not a function: %s", fn.Type())
 	}
-
-	if len(args) != len(function.Parameters) {
-		return newError("wrong number of arguments. want=%d, got=%d", len(function.Parameters), len(args))
-	}
-
-	extendedEnv := extendFunctionEnv(function, args)
-	evaluated := Eval(function.Body, extendedEnv)
-	return unwrapReturnValue(evaluated)
 }
 
 // extendFunctionEnv takes a function's env and creates an inner env with the outer's scope
@@ -187,6 +266,21 @@ func unwrapReturnValue(obj object.Object) object.Object {
 		return returnValue.Value // stops a return value from returning all function call stack early
 	}
 	return obj // if no explicit value is returned, take the last value
+}
+
+// evalIfExpression evaluates an if expression node
+func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Object {
+	condition := Eval(node.Condition, env)
+	if isError(condition) {
+		return condition
+	}
+	if isTruthy(condition) {
+		return Eval(node.Consequence, env)
+	} else if node.Alternative != nil {
+		return Eval(node.Alternative, env)
+	} else {
+		return NULL
+	}
 }
 
 // evalPrefixExpression evaluates a prefix expression
@@ -230,6 +324,8 @@ func evalInfixExpression(op string, left object.Object, right object.Object) obj
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(op, left, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExpression(op, left, right)
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
 
@@ -268,6 +364,23 @@ func evalIntegerInfixExpression(op string, left object.Object, right object.Obje
 	default:
 		return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 	}
+}
+
+func evalStringInfixExpression(op string, left object.Object, right object.Object) object.Object {
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+
+	switch op {
+	case "+":
+		return &object.String{Value: leftVal + rightVal}
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)
+	default:
+		return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
+	}
+
 }
 
 // nativeBoolToBooleanObject converts a go bool into a singleton boolean object

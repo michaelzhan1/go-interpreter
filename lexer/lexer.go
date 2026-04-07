@@ -1,6 +1,8 @@
 package lexer
 
-import "github.com/michaelzhan1/go-interpreter/token"
+import (
+	"github.com/michaelzhan1/go-interpreter/token"
+)
 
 // Lexer is the struct that holds lexing information
 type Lexer struct {
@@ -43,6 +45,8 @@ func (l *Lexer) NextToken() token.Token {
 	l.skipWhitespace()
 
 	switch l.ch {
+	case '"':
+		tok = token.NewToken(token.STRING, l.readString())
 	case '=':
 		if l.peekChar() == '=' {
 			ch := l.ch
@@ -71,6 +75,10 @@ func (l *Lexer) NextToken() token.Token {
 		tok = token.NewToken(token.LT, string(l.ch))
 	case '>':
 		tok = token.NewToken(token.GT, string(l.ch))
+	case '[':
+		tok = token.NewToken(token.LBRACKET, string(l.ch))
+	case ']':
+		tok = token.NewToken(token.RBRACKET, string(l.ch))
 	case '(':
 		tok = token.NewToken(token.LPAREN, string(l.ch))
 	case ')':
@@ -81,6 +89,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = token.NewToken(token.RBRACE, string(l.ch))
 	case ',':
 		tok = token.NewToken(token.COMMA, string(l.ch))
+	case ':':
+		tok = token.NewToken(token.COLON, string(l.ch))
 	case ';':
 		tok = token.NewToken(token.SEMICOLON, string(l.ch))
 	case 0:
@@ -118,11 +128,21 @@ func (l *Lexer) readIdentifier() string {
 
 // readNumber reads the next number as a string
 func (l *Lexer) readNumber() string {
-	pos := l.pos
+	start := l.pos
 	for isDigit(l.ch) {
 		l.readChar()
 	}
-	return l.input[pos:l.pos]
+	return l.input[start:l.pos]
+}
+
+// readString reads the next string literal
+func (l *Lexer) readString() string {
+	l.readChar() // move past first '"'
+	start := l.pos
+	for l.ch != '"' && l.ch != 0 {
+		l.readChar()
+	}
+	return l.input[start:l.pos]
 }
 
 // isLetter returns if ch is a letter
