@@ -7,13 +7,11 @@ import (
 )
 
 var builtins = map[string]*object.BuiltIn{
-	"print": {
+	"puts": {
 		Fn: func(args ...object.Object) object.Object {
-			ss := make([]any, len(args))
-			for i, a := range args {
-				ss[i] = any(a.Inspect())
+			for _, a := range args {
+				fmt.Println(a.Inspect())
 			}
-			fmt.Println(ss...)
 			return NULL
 		},
 	},
